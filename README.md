@@ -52,18 +52,3 @@ platform.stackrox.io/Central:
 Here is a diagram of how it works with Argo CD.
 
 ![GitOps Flow](docs/img/gitops-flow.png)
-
-
-### TODOs:
-playbook work:
-- ACS instance config for CCM:
-    - authprovider
-    - permission set, access scope
-- split the playbook into 2 parts (?)
-    - ACS configs
-    - team access grant (the role mapping)
-
-GitOps and OpenShift integration
-    - argoCD post-sync hook
-    - create CCM stuff: service account, build and job template
-
