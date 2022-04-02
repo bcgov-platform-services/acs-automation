@@ -29,17 +29,18 @@ access_scope:
 
 # role = Namespace Admin level Permission Set & Access Scope
 role:
-  - name: "App Team - {{ project_set }}"
+  - name: "app-team-{{ project_set }}"
     description: Administrators of product catalog namespaces
     permission_set: Namespace Admin
     access_scope: "project-set-{{ project_set }}"
     global_access: NO_ACCESS
 
 # Associate roles with users/groups in Provider
+# NOTE: we are not using Groups, for OpenShift authProvider, it's name
 role_mappings:
   - key: name
-    value: admin
-    role_name: Admin
-  - key: groups
-    value: "project-set-{{ project_set }}"
-    role_name: "App Team - {{ project_set }}"
+    value: "{{ openshift_username }}"
+    role_name: "app-team-{{ project_set }}"
+  # - key: groups
+  #   value: "{{ openshift_username }}"
+  #   role_name: "app-team-{{ project_set }}"
