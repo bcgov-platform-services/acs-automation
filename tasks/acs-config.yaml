@@ -3,55 +3,12 @@
 
 - include_vars: vars/acs-custom-config.yaml
 
-# TODO: move this to a task, needed both openshift and azureAD
-# Create Openshift Authenticator, will either succeed (200) or fail (400) because it already exists
-- name: Insert OpenShift Authentication Provider
-  uri:
-    url: "https://{{ api_endpoint }}/v1/authProviders"
-    method: POST
-    validate_certs: no
-    headers:
-      authorization: "{{ authorization }}"
-    body_format: json
-    body:
-      name: "{{ auth_provider.name }}"
-      type: "{{ auth_provider.type }}"
-      active: true
-      uiEndpoint: "{{ ui_endpoint }}"
-      enabled: true
-    status_code: [200, 400]
-
-# Get OpenShift Authenticator to retrieve the ID
-- name: Get Auth Provider Id
-  uri:
-    url: "https://{{ api_endpoint }}/v1/authProviders?name={{ auth_provider.name }}"
-    method: GET
-    validate_certs: no
-    headers:
-      authorization: "{{ authorization }}"
-    body_format: json
-    status_code: 200
-  register: authprovider_result
-
-# Set the default role for the authenticator, note I use Admin so change for security or comment out!
-- name: Set default role for provider "{{ authprovider_result.json.authProviders[0].name }}"
-  uri:
-    url: "https://{{ api_endpoint }}/v1/groupsbatch"
-    method: POST
-    validate_certs: no
-    headers:
-      authorization: "{{ authorization }}"
-    body_format: json
-    body:
-      previous_groups: []
-        # - props:
-        #     authProviderId: "{{ authprovider_result.json.authProviders[0].id }}"
-        #   roleName: "{{ default_auth_provider_role }}"
-      required_groups:
-        - props:
-            authProviderId: "{{ authprovider_result.json.authProviders[0].id }}"
-          roleName: "{{ default_auth_provider_role }}"
-    status_code: [200,500] # 500 for already exists
+# Create auth providers:
+# - Openshift as Openshift
+# - AzureAD as oidc
+- name: Create auth providers
+  include_tasks: create_auth_provider.yaml
+  with_items: "{{ auth_provider }}"
 
 # Create the permission sets
 - name: Create Permission Sets
@@ -113,7 +70,7 @@
 # Here is the priority of roles that should be applied to users:
 #   Admin > MISO security role > PO/TL role
 
-# Admin users with OpenShift auth provider:
+# Admin users with OpenShift auth provider (openshift):
 - name: Map role in Provider
   uri:
     url: "https://{{ api_endpoint }}/v1/groupsbatch"
@@ -125,20 +82,20 @@
     body:
         previous_groups:
         - props:
-            authProviderId: "{{ authprovider_with_openshift }}"
+            authProviderId: "{{ auth_provider_openshift_id }}"
             key: "{{ item.key }}"
             value: "{{ item.value }}"
         required_groups:
         - roleName: "{{ item.role_name }}"
           props:
-            authProviderId: "{{ authprovider_with_openshift }}"
+            authProviderId: "{{ auth_provider_openshift_id }}"
             key: "{{ item.key }}"
             value: "{{ item.value }}"
     status_code: [200]
   with_items: "{{ custom_groups_with_openshift }}"
 
 
-# MISO users with Azure AD auth provider:
+# MISO users with Azure AD auth provider (oidc):
 - name: Map role in Provider
   uri:
     url: "https://{{ api_endpoint }}/v1/groupsbatch"
@@ -150,13 +107,13 @@
     body:
         previous_groups:
         - props:
-            authProviderId: "{{ authprovider_with_azuread }}"
+            authProviderId: "{{ auth_provider_oidc_id }}"
             key: "{{ item.key }}"
             value: "{{ item.value }}"
         required_groups:
         - roleName: "{{ item.role_name }}"
           props:
-            authProviderId: "{{ authprovider_with_azuread }}"
+            authProviderId: "{{ auth_provider_oidc_id }}"
             key: "{{ item.key }}"
             value: "{{ item.value }}"
     status_code: [200]

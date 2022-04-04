@@ -6,5 +6,21 @@ api_endpoint: placeholder.com
 ui_endpoint: "{{ api_endpoint }}"
 
 # ---- ACS instance config ----
-auth_provider: {name: OpenShift, type: openshift}
+# - Openshift as Openshift
+# - AzureAD as oidc
+auth_provider:
+- name: OpenShift
+  type: openshift
+  active: true
+  enabled: true
+- name: Azure AD IDIR (SSO)
+  type: oidc
+  active: true
+  enabled: true
+  config:
+  - client_id: "{{ sso_client_id }}"
+    client_secret: "{{ sso_client_password }}"
+    issuer: "{{ sso_issuer }}"
+    mode: post
+
 default_auth_provider_role: None
