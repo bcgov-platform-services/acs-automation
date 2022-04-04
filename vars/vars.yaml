@@ -8,39 +8,3 @@ ui_endpoint: "{{ api_endpoint }}"
 # ---- ACS instance config ----
 auth_provider: {name: OpenShift, type: openshift}
 default_auth_provider_role: None
-
-# ---- ACS team access ----
-# "Namespace Admin" Permission Set is created in ACS config
-
-# Namespace Admin Access Scope
-access_scope:
-  - name: "project-set-{{ project_set }}"
-    description: Application Team Access
-    rules:
-      includedClusters: []
-      includedNamespaces: []
-      clusterLabelSelectors: []
-      namespaceLabelSelectors:
-      - requirements:
-        - key: name
-          op: IN
-          values:
-          - project_set
-
-# role = Namespace Admin level Permission Set & Access Scope
-role:
-  - name: "app-team-{{ project_set }}"
-    description: Administrators of product catalog namespaces
-    permission_set: Namespace Admin
-    access_scope: "project-set-{{ project_set }}"
-    global_access: NO_ACCESS
-
-# Associate roles with users/groups in Provider
-# NOTE: we are not using Groups, for OpenShift authProvider, it's name
-role_mappings:
-  - key: name
-    value: "{{ openshift_username }}"
-    role_name: "app-team-{{ project_set }}"
-  # - key: groups
-  #   value: "{{ openshift_username }}"
-  #   role_name: "app-team-{{ project_set }}"
