@@ -16,7 +16,7 @@
 # Retrieve the auth provider ID
 - name: Get Auth Provider Id
   uri:
-    url: "https://{{ api_endpoint }}/v1/authProviders?name={{ item.name }}"
+    url: "https://{{ api_endpoint }}/v1/authProviders?name={{ item.name | urlencode }}"
     method: GET
     validate_certs: no
     headers:
