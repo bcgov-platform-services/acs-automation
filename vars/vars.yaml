@@ -1,11 +1,12 @@
 # ---- General ----
 activity: testing
 
+# ---- ACS instance config ----
 api_endpoint: placeholder.com
 # change if the UI is hosted on a different endpoint:
 ui_endpoint: "{{ api_endpoint }}"
 
-# ---- ACS instance config ----
+# ---- ACS auth provider config ----
 # - Openshift as Openshift
 # - AzureAD as oidc
 auth_provider:
