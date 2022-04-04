@@ -8,7 +8,7 @@
 # Get OpenShift Authenticator to retrieve the ID
 - name: Get Auth Provider Id
   uri:
-    url: "https://{{ api_endpoint }}/v1/authProviders?name={{ auth_provider.name }}"
+    url: "https://{{ api_endpoint }}/v1/authProviders?name=Openshift"
     method: GET
     validate_certs: no
     headers:
