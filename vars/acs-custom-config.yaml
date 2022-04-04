@@ -1,4 +1,6 @@
 ---
+# TODO: this should be turned into a configmap from CCM repo
+
 # ---- custom permission sets ----
 # - Ministry Admin
 # - Namespace Admin
@@ -199,3 +201,16 @@ custom_roles:
     access_scope: All Social Sector
     permission_set: Ministry Admin
     global_access: NO_ACCESS
+
+# Associate roles with users/groups in Provider
+custom_groups_with_openshift:
+# for admins
+  - key: name
+    value: "xxx@github"
+    role_name: "Admin"
+
+custom_groups_with_azuread:
+# for MISO
+  - key: email
+    value: "xxx"
+    role_name: "Security-NRM"
