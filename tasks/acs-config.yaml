@@ -125,14 +125,39 @@
     body:
         previous_groups:
         - props:
-            authProviderId: "{{ authprovider_result.json.authProviders[0].id }}"
+            authProviderId: "{{ authprovider_with_openshift }}"
             key: "{{ item.key }}"
             value: "{{ item.value }}"
         required_groups:
         - roleName: "{{ item.role_name }}"
           props:
-            authProviderId: "{{ authprovider_result.json.authProviders[0].id }}"
+            authProviderId: "{{ authprovider_with_openshift }}"
             key: "{{ item.key }}"
             value: "{{ item.value }}"
     status_code: [200]
   with_items: "{{ custom_groups_with_openshift }}"
+
+
+# MISO users with Azure AD auth provider:
+- name: Map role in Provider
+  uri:
+    url: "https://{{ api_endpoint }}/v1/groupsbatch"
+    method: POST
+    validate_certs: no
+    headers:
+        authorization: "{{ authorization }}"
+    body_format: json
+    body:
+        previous_groups:
+        - props:
+            authProviderId: "{{ authprovider_with_azuread }}"
+            key: "{{ item.key }}"
+            value: "{{ item.value }}"
+        required_groups:
+        - roleName: "{{ item.role_name }}"
+          props:
+            authProviderId: "{{ authprovider_with_azuread }}"
+            key: "{{ item.key }}"
+            value: "{{ item.value }}"
+    status_code: [200]
+  with_items: "{{ custom_groups_with_azuread }}"
