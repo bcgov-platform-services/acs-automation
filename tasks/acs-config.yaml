@@ -109,10 +109,11 @@
     body_format: json
     body:
         previous_groups:
-        - props:
-            authProviderId: "{{ auth_provider_oidc_id }}"
-            key: "{{ item.key }}"
-            value: "{{ item.value }}"
+        - props: []
+            # Not matching the existing group, this is to prevent error from new groups that are not created
+            # authProviderId: "{{ auth_provider_oidc_id }}"
+            # key: "{{ item.key }}"
+            # value: "{{ item.value }}"
         required_groups:
         - roleName: "{{ item.role_name }}"
           props:
