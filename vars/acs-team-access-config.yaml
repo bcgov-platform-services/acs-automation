@@ -1,3 +1,6 @@
+---
+# This is a SAMPLE!
+
 # ---- ACS team access ----
 # "Namespace Admin" Permission Set is created in ACS config
 
@@ -24,12 +27,9 @@ role:
     access_scope: "project-set-{{ project_set }}"
     global_access: NO_ACCESS
 
-# Associate roles with users/groups in Provider
-# NOTE: we are not using Groups, for OpenShift authProvider, it's name
+# Associate roles with users, aka groups
+# NOTE: for OpenShift authProvider, it's name
 role_mappings:
   - key: name
     value: "{{ openshift_username }}"
     role_name: "app-team-{{ project_set }}"
-  # - key: groups
-  #   value: "{{ openshift_username }}"
-  #   role_name: "app-team-{{ project_set }}"

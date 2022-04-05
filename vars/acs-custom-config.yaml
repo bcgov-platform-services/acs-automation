@@ -1,205 +1,45 @@
 ---
-# TODO: this should be turned into a configmap from CCM repo
+# This is a SAMPLE!
 
 # ---- custom permission sets ----
 # - Ministry Admin
 # - Namespace Admin
 custom_permission_sets:
-  - name: Namespace Admin
-    description: A user that is an administrator of one or more namespaces across various clusters.
+  - name: <name_for_the_permission>
+    description: <description_for_the_permission>
     resourceToAccess:
-      APIToken: READ_WRITE_ACCESS
-      Alert: READ_ACCESS
-      AllComments: NO_ACCESS
-      AuthPlugin: NO_ACCESS
-      AuthProvider: NO_ACCESS
-      BackupPlugins: NO_ACCESS
-      CVE: NO_ACCESS
-      Cluster: READ_ACCESS
-      Compliance: READ_ACCESS
-      ComplianceRunSchedule: READ_ACCESS
-      ComplianceRuns: READ_ACCESS
-      Config: NO_ACCESS
-      DebugLogs: NO_ACCESS
-      Deployment: READ_ACCESS
-      Detection: READ_ACCESS
-      Group: NO_ACCESS
-      Image: READ_ACCESS
-      ImageComponent: NO_ACCESS
-      ImageIntegration: NO_ACCESS
-      Indicator: READ_ACCESS
-      K8sRole: READ_ACCESS
-      K8sRoleBinding: READ_ACCESS
-      K8sSubject: READ_ACCESS
-      Licenses: NO_ACCESS
-      Namespace: READ_ACCESS
-      NetworkBaseline: READ_ACCESS
-      NetworkGraph: READ_ACCESS
-      NetworkGraphConfig: READ_ACCESS
-      NetworkPolicy: READ_ACCESS
-      Node: NO_ACCESS
-      Notifier: NO_ACCESS
-      Policy: READ_ACCESS
-      ProbeUpload: NO_ACCESS
-      ProcessWhitelist: NO_ACCESS
-      Risk: READ_ACCESS
-      Role: NO_ACCESS
-      ScannerBundle: NO_ACCESS
-      ScannerDefinitions: NO_ACCESS
-      Secret: READ_ACCESS
-      SensorUpgradeConfig: NO_ACCESS
-      ServiceAccount: READ_ACCESS
-      ServiceIdentity: NO_ACCESS
-      User: NO_ACCESS
-      WatchedImage: READ_WRITE_ACCESS
-  - description: Admin permissions for Ministry staff that shouldn't be able to affect overall platform settings.
-    name: Ministry Admin
-    resourceToAccess:
-      APIToken: READ_WRITE_ACCESS
-      Alert: READ_WRITE_ACCESS
-      AllComments: READ_WRITE_ACCESS
-      AuthPlugin: NO_ACCESS
-      AuthProvider: NO_ACCESS
-      BackupPlugins: READ_ACCESS
-      CVE: READ_ACCESS
-      Cluster: READ_ACCESS
-      Compliance: READ_ACCESS
-      ComplianceRunSchedule: READ_ACCESS
-      ComplianceRuns: READ_ACCESS
-      Config: READ_ACCESS
-      DebugLogs: NO_ACCESS
-      Deployment: READ_ACCESS
-      Detection: READ_ACCESS
-      Group: READ_ACCESS
-      Image: READ_ACCESS
-      ImageComponent: READ_ACCESS
-      ImageIntegration: READ_ACCESS
-      Indicator: READ_ACCESS
-      K8sRole: READ_ACCESS
-      K8sRoleBinding: READ_ACCESS
-      K8sSubject: READ_ACCESS
-      Licenses: READ_ACCESS
-      Namespace: READ_ACCESS
-      NetworkBaseline: READ_ACCESS
-      NetworkGraph: READ_ACCESS
-      NetworkGraphConfig: READ_ACCESS
-      NetworkPolicy: READ_ACCESS
-      Node: READ_ACCESS
-      Notifier: READ_WRITE_ACCESS
-      Policy: READ_ACCESS
-      ProbeUpload: READ_ACCESS
-      ProcessWhitelist: READ_ACCESS
-      Risk: READ_ACCESS
-      Role: READ_ACCESS
-      ScannerBundle: READ_ACCESS
-      ScannerDefinitions: READ_ACCESS
-      Secret: READ_ACCESS
-      SensorUpgradeConfig: READ_ACCESS
-      ServiceAccount: READ_ACCESS
-      ServiceIdentity: READ_ACCESS
-      User: READ_ACCESS
-      VulnerabilityManagementApprovals: READ_WRITE_ACCESS
-      VulnerabilityManagementRequests: READ_WRITE_ACCESS
-      VulnerabilityReports: READ_WRITE_ACCESS
-      WatchedImage: READ_WRITE_ACCESS
+      <resource_name>: <R/W_access>
 
 
 # ---- custom access scope ----
 # - for each Ministry
 custom_access_scopes:
-  - description: Access to all AG and PSSG namespaces
-    name: All AG PSSG
+  - description: Access to all XXX namespaces
+    name: All XXX
     rules:
       clusterLabelSelectors:
       - requirements:
         - key: clusterName
           op: IN
           values:
-          - SILVER
-          - GOLD
-          - GOLDDR
-          - KLAB
-          - CLAB
+          - <clusters>
       includedClusters: []
       includedNamespaces: []
       namespaceLabelSelectors:
       - requirements:
-        - key: ministry_id
+        - key: <label_name>
           op: IN
           values:
-          - AG
-          - PSSG
-  - description: All NRM namespaces
-    name: All NRM
-    rules:
-      clusterLabelSelectors:
-      - requirements:
-        - key: clusterName
-          op: IN
-          values:
-          - SILVER
-          - GOLD
-          - GOLDDR
-          - KLAB
-          - CLAB
-      includedClusters: []
-      includedNamespaces: []
-      namespaceLabelSelectors:
-      - requirements:
-        - key: ministry_id
-          op: IN
-          values:
-          - EMPR
-          - FLNR
-          - ENV
-          - EAO
-  - description: All Social Sector namespaces
-    name: All Social Sector
-    rules:
-      clusterLabelSelectors:
-      - requirements:
-        - key: clusterName
-          op: IN
-          values:
-          - SILVER
-          - GOLD
-          - GOLDDR
-          - KLAB
-          - CLAB
-      includedClusters: []
-      includedNamespaces: []
-      namespaceLabelSelectors:
-      - requirements:
-        - key: ministry_id
-          op: IN
-          values:
-          - SDPR
-          - MCF
+          - XXX
 
 # ---- custom roles ----
 # - each Ministry Security team
-# - OCIO ISB SecOps
 # NOTE: use - for concatenation as this object does not have ID
 custom_roles:
-  - name: Security-OCIO-ISB-SecOps
-    description: Access for InfoSec Branch and Security Operations
+  - name: Security-xxx
+    description: Access for xxx
     access_scope: Unrestricted
-    permission_set: Analyst
-    global_access: NO_ACCESS
-  - name: Security-AG-PSSG
-    description: Access for AG and PSSG Security team members
-    access_scope: All AG PSSG
-    permission_set: Ministry Admin
-    global_access: NO_ACCESS
-  - name: Security-NRM
-    description: NRM Security team access
-    access_scope: All NRM
-    permission_set: Ministry Admin
-    global_access: NO_ACCESS
-  - name: Security-Social-Sector
-    description: Social Sector Security team role
-    access_scope: All Social Sector
-    permission_set: Ministry Admin
+    permission_set: <permission_set_name>
     global_access: NO_ACCESS
 
 # Associate roles with users/groups in Provider
@@ -213,4 +53,4 @@ custom_groups_with_azuread:
 # for MISO
   - key: email
     value: "xxx"
-    role_name: "Security-NRM"
+    role_name: "Security-xxx"
