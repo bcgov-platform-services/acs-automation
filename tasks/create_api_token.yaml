@@ -1,0 +1,17 @@
+---
+# To be used when we need to create API token instead of using the admin credentials
+- name: Generate API Token
+  uri:
+    url: "https://{{ api_endpoint }}/v1/apitokens/generate"
+    method: POST
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    body:
+      name: acs-automation
+      role: Admin
+    status_code: [200]
+  register: result
+
+- debug: msg="{{ result }}"
