@@ -74,7 +74,26 @@
 #   Admin > MISO security role > PO/TL role
 
 # Admin users with OpenShift auth provider (openshift):
-- name: Map role in Provider
+# 1 - Create if not exist:
+- name: Create rolebinding if not exists for OpenShift auth provider
+  uri:
+    url: "https://{{ api_endpoint }}/v1/groups"
+    method: POST
+    validate_certs: no
+    headers:
+        authorization: "{{ authorization }}"
+    body_format: json
+    body:
+      roleName: "{{ item.role_name }}"
+      props:
+        authProviderId: "{{ auth_provider_openshift_id }}"
+        key: "{{ item.key }}"
+        value: "{{ item.value }}"
+    status_code: [200,500]
+  with_items: "{{ custom_groups_with_openshift }}"
+
+# 2 - Update to make sure the new roles are applied:
+- name: Map role in OpenShift auth provider
   uri:
     url: "https://{{ api_endpoint }}/v1/groupsbatch"
     method: POST
@@ -99,7 +118,26 @@
 
 
 # MISO users with Azure AD auth provider (oidc):
-- name: Map role in Provider
+# 1 - Create if not exist:
+- name: Create rolebinding if not exists for Azure AD auth provider
+  uri:
+    url: "https://{{ api_endpoint }}/v1/groups"
+    method: POST
+    validate_certs: no
+    headers:
+        authorization: "{{ authorization }}"
+    body_format: json
+    body:
+      roleName: "{{ item.role_name }}"
+      props:
+        authProviderId: "{{ auth_provider_oidc_id }}"
+        key: "{{ item.key }}"
+        value: "{{ item.value }}"
+    status_code: [200,500]
+  with_items: "{{ custom_groups_with_azuread }}"
+
+# 2 - Update to make sure the new roles are applied:
+- name: Map role in Azure AD auth provider
   uri:
     url: "https://{{ api_endpoint }}/v1/groupsbatch"
     method: POST
@@ -108,18 +146,17 @@
         authorization: "{{ authorization }}"
     body_format: json
     body:
-        previous_groups:
-        - props: []
-            # Not matching the existing group, this is to prevent error from new groups that are not created
-            # authProviderId: "{{ auth_provider_oidc_id }}"
-            # key: "{{ item.key }}"
-            # value: "{{ item.value }}"
-        required_groups:
-        - roleName: "{{ item.role_name }}"
-          props:
-            authProviderId: "{{ auth_provider_oidc_id }}"
-            key: "{{ item.key }}"
-            value: "{{ item.value }}"
+      previous_groups:
+      - props:
+          authProviderId: "{{ auth_provider_oidc_id }}"
+          key: "{{ item.key }}"
+          value: "{{ item.value }}"
+      required_groups:
+      - roleName: "{{ item.role_name }}"
+        props:
+          authProviderId: "{{ auth_provider_oidc_id }}"
+          key: "{{ item.key }}"
+          value: "{{ item.value }}"
     status_code: [200]
   with_items: "{{ custom_groups_with_azuread }}"
 
