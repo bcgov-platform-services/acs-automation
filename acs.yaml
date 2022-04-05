@@ -3,7 +3,7 @@
   connection: local
   gather_facts: no
   vars_files: 
-    - vars/vars.yaml
+    - vars.yaml
   tasks:
     # setup auth:
     - name: Use API Token if defined

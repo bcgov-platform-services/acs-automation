@@ -2,7 +2,7 @@
 
 This is an ansible playbook for configuring Red Hat Advanced Cluster Security (i.e. Stackrox). Specifically this configures an OpenShift authentication provider along with setting up user access to ACS in terms of access scopes and permission sets.
 
-The playbook uses the uri module to drive the ACS API, the configuration that is created is managed the variables in vars/vars.yaml.
+The playbook uses the uri module to drive the ACS API, the configuration that is created is managed the variables in `vars.yaml`. To run the specific tasks, you will need to edit the config files in `./vars` folder as well.
 
 ### Using
 
@@ -30,9 +30,9 @@ ansible-playbook acs.yaml -e activity=acs_config \
 
 ### Integrating with GitOps
 
-Integrating this automation with an existing installation of ACS via Argo CD is very straight foward:
+Integrating this automation with an existing installation of ACS via Argo CD is very straight forward:
 
-1. Fork the repo and update the `vars/vars.yaml` to reflect the configuration that you want
+1. Fork the repo and update the `vars.yaml` to reflect the configuration that you want
 
 2. Update your Argo CD configuration to include a health check for Central:
 
