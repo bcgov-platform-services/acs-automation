@@ -70,51 +70,51 @@
 # Here is the priority of roles that should be applied to users:
 #   Admin > MISO security role > PO/TL role
 
-# Admin users with OpenShift auth provider (openshift):
-- name: Map role in Provider
-  uri:
-    url: "https://{{ api_endpoint }}/v1/groupsbatch"
-    method: POST
-    validate_certs: no
-    headers:
-        authorization: "{{ authorization }}"
-    body_format: json
-    body:
-        previous_groups:
-        - props:
-            authProviderId: "{{ auth_provider_openshift_id }}"
-            key: "{{ item.key }}"
-            value: "{{ item.value }}"
-        required_groups:
-        - roleName: "{{ item.role_name }}"
-          props:
-            authProviderId: "{{ auth_provider_openshift_id }}"
-            key: "{{ item.key }}"
-            value: "{{ item.value }}"
-    status_code: [200]
-  with_items: "{{ custom_groups_with_openshift }}"
+# # Admin users with OpenShift auth provider (openshift):
+# - name: Map role in Provider
+#   uri:
+#     url: "https://{{ api_endpoint }}/v1/groupsbatch"
+#     method: POST
+#     validate_certs: no
+#     headers:
+#         authorization: "{{ authorization }}"
+#     body_format: json
+#     body:
+#         previous_groups:
+#         - props:
+#             authProviderId: "{{ auth_provider_openshift_id }}"
+#             key: "{{ item.key }}"
+#             value: "{{ item.value }}"
+#         required_groups:
+#         - roleName: "{{ item.role_name }}"
+#           props:
+#             authProviderId: "{{ auth_provider_openshift_id }}"
+#             key: "{{ item.key }}"
+#             value: "{{ item.value }}"
+#     status_code: [200]
+#   with_items: "{{ custom_groups_with_openshift }}"
 
 
-# MISO users with Azure AD auth provider (oidc):
-- name: Map role in Provider
-  uri:
-    url: "https://{{ api_endpoint }}/v1/groupsbatch"
-    method: POST
-    validate_certs: no
-    headers:
-        authorization: "{{ authorization }}"
-    body_format: json
-    body:
-        previous_groups:
-        - props:
-            authProviderId: "{{ auth_provider_oidc_id }}"
-            key: "{{ item.key }}"
-            value: "{{ item.value }}"
-        required_groups:
-        - roleName: "{{ item.role_name }}"
-          props:
-            authProviderId: "{{ auth_provider_oidc_id }}"
-            key: "{{ item.key }}"
-            value: "{{ item.value }}"
-    status_code: [200]
-  with_items: "{{ custom_groups_with_azuread }}"
+# # MISO users with Azure AD auth provider (oidc):
+# - name: Map role in Provider
+#   uri:
+#     url: "https://{{ api_endpoint }}/v1/groupsbatch"
+#     method: POST
+#     validate_certs: no
+#     headers:
+#         authorization: "{{ authorization }}"
+#     body_format: json
+#     body:
+#         previous_groups:
+#         - props:
+#             authProviderId: "{{ auth_provider_oidc_id }}"
+#             key: "{{ item.key }}"
+#             value: "{{ item.value }}"
+#         required_groups:
+#         - roleName: "{{ item.role_name }}"
+#           props:
+#             authProviderId: "{{ auth_provider_oidc_id }}"
+#             key: "{{ item.key }}"
+#             value: "{{ item.value }}"
+#     status_code: [200]
+#   with_items: "{{ custom_groups_with_azuread }}"
