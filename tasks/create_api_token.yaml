@@ -1,6 +1,23 @@
 ---
 # To be used when we need to create API token instead of using the admin credentials
-- name: Generate API Token
+
+# - name: Get API tokens
+#   uri:
+#     url: "https://{{ api_endpoint }}/v1/apitokens"
+#     method: GET
+#     validate_certs: no
+#     headers:
+#       authorization: "{{ authorization }}"
+#     body_format: json
+#     status_code: [200, 409]
+#   register: tokens_result
+
+# - name: find API token
+#   set_fact:
+#     api_token_id: "{{ tokens_result.json | json_query('tokens[? name==`acs-automation` && revoked==`false`].id') }}"
+
+
+- name: Generate a new API Token for this job
   uri:
     url: "https://{{ api_endpoint }}/v1/apitokens/generate"
     method: POST
@@ -12,6 +29,13 @@
       name: acs-automation
       role: Admin
     status_code: [200]
-  register: result
+  register: new_token
 
-- debug: msg="{{ result }}"
+- name: Set API token
+  set_fact:
+    api_token_id: "{{ new_token.json.metadata.id }}"
+    api_token_value: "{{ new_token.json.token }}"
+
+- name: Set auth Bearer token
+  set_fact:
+    authorization: "Bearer {{ api_token_value }}"

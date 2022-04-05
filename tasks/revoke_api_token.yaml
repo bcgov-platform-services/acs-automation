@@ -1,0 +1,10 @@
+---
+- name: Revoke the API tokens
+  uri:
+    url: "https://{{ api_endpoint }}/v1/apitokens/revoke/{{ api_token_id }}"
+    method: PATCH
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    status_code: [200]
