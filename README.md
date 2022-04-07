@@ -1,6 +1,6 @@
 ### Introduction
 
-This is an ansible playbook for configuring Red Hat Advanced Cluster Security (i.e. Stackrox). Specifically this configures an OpenShift authentication provider along with setting up user access to ACS in terms of access scopes and permission sets.
+This is an ansible playbook for configuring Red Hat Advanced Cluster Security (i.e. Stackrox). Specifically this configures an OpenShift authentication provider along with setting up user access to ACS in terms of access scopes and permission sets. See [this diagram](https://app.mural.co/t/platformservices5977/m/platformservices5977/1648830590650/22bf3714ed349ecf6440821d5687c56a1c23319f?sender=ubd5b0c8c42584deffe081219) for the ACS automation flows.
 
 The playbook uses the uri module to drive the ACS API, the configuration that is created is managed the variables in `vars.yaml`. To run the specific tasks, you will need to edit the config files in `./vars` folder as well.
 
