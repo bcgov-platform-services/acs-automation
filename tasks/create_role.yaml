@@ -2,17 +2,14 @@
 - debug:
     msg: "Creating access set {{ item.name }} "
 
-# Retrieve the one permissionset we need to link to role
-- name: Retrieve permissionset
+# Retrieve the one permission set we need to link to role
+- name: Retrieve permission set
   set_fact:
     permission_set: "{{ permission_set_result.json.permissionSets | json_query(query) }}"
   vars:
     query: "[? name==`{{ item.permission_set }}`]"
 
-- debug:
-    msg: "{{ permission_set[0].id }}"
-
-# Retrieve the one permissionset we need to link to role
+# Retrieve the one access scope we need to link to role
 - name: Retrieve access scope
   set_fact:
     access_scope: "{{ access_scope_result.json.accessScopes | json_query(query) }}"
@@ -20,7 +17,7 @@
     query: "[? name==`{{ item.access_scope }}`]"
 
 - debug:
-    msg: "{{ access_scope[0].id }}"
+    msg: "Creating Role with \nPermission Set: {{ permission_set[0].name }} - {{ permission_set[0].id }} \nAccess Scope: {{ access_scope[0].name }} - {{ access_scope[0].id }}"
 
 # Create role that links access set and permission set
 - name: Create role
@@ -38,3 +35,27 @@
       accessScopeId: "{{ access_scope[0].id }}"
       globalAccess: "{{ item.global_access }}"
     status_code: [200, 409]
+
+
+# - name: Get Role
+#   uri:
+#     url: "https://{{ api_endpoint }}/v1/roles/Security-<ministry_name>"
+#     method: GET
+#     validate_certs: no
+#     headers:
+#       authorization: "{{ authorization }}"
+#     body_format: json
+#     status_code: 200
+#   register: results
+
+# - debug: msg="{{ results }}"
+
+# - name: Delete role
+#   uri:
+#     url: "https://{{ api_endpoint }}/v1/roles/Security-<ministry_name>"
+#     method: DELETE
+#     validate_certs: no
+#     headers:
+#         authorization: "{{ authorization }}"
+#     body_format: json
+#     status_code: [200]

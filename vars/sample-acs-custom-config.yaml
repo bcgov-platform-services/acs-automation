@@ -1,0 +1,56 @@
+---
+# This is a SAMPLE!
+
+# ---- custom permission sets ----
+# - Ministry Admin
+# - Namespace Admin
+custom_permission_sets:
+  - name: <name_for_the_permission>
+    description: <description_for_the_permission>
+    resourceToAccess:
+      <resource_name>: <R/W_access>
+
+
+# ---- custom access scope ----
+# - for each Ministry
+custom_access_scopes:
+  - description: Access to all XXX namespaces
+    name: All XXX
+    rules:
+      clusterLabelSelectors:
+      - requirements:
+        - key: clusterName
+          op: IN
+          values:
+          - <clusters>
+      includedClusters: []
+      includedNamespaces: []
+      namespaceLabelSelectors:
+      - requirements:
+        - key: <label_name>
+          op: IN
+          values:
+          - XXX
+
+# ---- custom roles ----
+# - each Ministry Security team
+# NOTE: use - for concatenation as this object does not have ID
+custom_roles:
+  - name: Security-xxx
+    description: Access for xxx
+    access_scope: Unrestricted
+    permission_set: <permission_set_name>
+    global_access: NO_ACCESS
+
+# Associate roles with users/groups in Provider
+custom_groups_with_openshift:
+# for admins
+  - key: name
+    value: "xxx@github"
+    role_name: "Admin"
+
+custom_groups_with_azuread:
+# for MISO
+  - key: email
+    value: "xxx"
+    role_name: "Security-xxx"

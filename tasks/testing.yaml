@@ -1,0 +1,13 @@
+---
+- name: Test API access
+  uri:
+    url: "https://{{ api_endpoint }}/v1/auth/status"
+    method: GET
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    status_code: 200
+
+- debug: msg="All good!"
+  

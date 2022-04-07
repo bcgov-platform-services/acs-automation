@@ -1,0 +1,47 @@
+---
+- debug: msg="create auth provider"
+
+# Create Authenticator, will either succeed (200) or fail (400) because it already exists
+- name: Insert OpenShift Authentication Provider
+  uri:
+    url: "https://{{ api_endpoint }}/v1/authProviders"
+    method: POST
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    body: "{{ item }}"
+    status_code: [200, 400]
+
+# Retrieve the auth provider ID
+- name: Get Auth Provider Id
+  uri:
+    url: "https://{{ api_endpoint }}/v1/authProviders?name={{ item.name | urlencode }}"
+    method: GET
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    status_code: 200
+  register: authprovider_result
+
+- name: Keep the auth provider ID for later use
+  set_fact:
+    "auth_provider_{{ item.type }}_id": "{{ authprovider_result.json.authProviders[0].id }}"
+
+# Set the default role for the authenticator
+- name: Set default role for provider "{{ authprovider_result.json.authProviders[0].name }}"
+  uri:
+    url: "https://{{ api_endpoint }}/v1/groupsbatch"
+    method: POST
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    body:
+      previous_groups: []
+      required_groups:
+        - props:
+            authProviderId: "auth_provider_{{ item.type }}_id"
+          roleName: "{{ default_auth_provider_role }}"
+    status_code: [200,500] # 500 for already exists

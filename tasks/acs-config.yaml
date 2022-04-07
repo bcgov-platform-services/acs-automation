@@ -1,0 +1,167 @@
+---
+- debug: msg="acs config"
+
+- include_vars: vars/acs-custom-config.yaml
+
+# Create a new API token to use:
+- include_tasks: create_api_token.yaml
+
+- name: Start to create components, if failed, revoke the API token anyway
+  block:
+    # Create auth providers:
+    # - Openshift as Openshift
+    # - AzureAD as oidc
+    - name: Create auth providers
+      include_tasks: create_auth_provider.yaml
+      with_items: "{{ auth_provider }}"
+
+    # Create the permission sets
+    - name: Create Permission Sets
+      uri:
+        url: "https://{{ api_endpoint }}/v1/permissionsets"
+        method: POST
+        validate_certs: no
+        headers:
+          authorization: "{{ authorization }}"
+        body_format: json
+        body: "{{ item }}"
+        status_code: [200,409] # HTTP Error 409: Conflict
+      with_items: "{{ custom_permission_sets }}"
+
+    # Create the access scopes
+    - name: Create Access Scopes
+      uri:
+        url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
+        method: POST
+        validate_certs: no
+        headers:
+          authorization: "{{ authorization }}"
+        body_format: json
+        body: "{{ item }}"
+        status_code: [200, 409] # HTTP Error 409: Conflict
+      with_items: "{{ custom_access_scopes }}"
+
+    # Need to get the permission sets to get IDs for Roles
+    - name: Get Permission Sets
+      uri:
+        url: "https://{{ api_endpoint }}/v1/permissionsets"
+        method: GET
+        validate_certs: no
+        headers:
+          authorization: "{{ authorization }}"
+        body_format: json
+        status_code: 200
+      register: permission_set_result
+
+    # Need to get the access scopes to get IDs for Roles
+    - name: Get Access Scopes
+      uri:
+        url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
+        method: GET
+        validate_certs: no
+        headers:
+          authorization: "{{ authorization }}"
+        body_format: json
+        status_code: 200
+      register: access_scope_result
+
+    # Create all of the roles
+    - name: Create Roles
+      include_tasks: create_role.yaml
+      with_items: "{{ custom_roles }}"
+
+    # Now we need to map users to roles with group
+    # Note: each user can only be mapped with one role, aka one group per user. So we'll have to specify the previous group in order to update it.
+    # Here is the priority of roles that should be applied to users:
+    #   Admin > MISO security role > PO/TL role
+
+    # Admin users with OpenShift auth provider (openshift):
+    # 1 - Create if not exist:
+    - name: Create rolebinding if not exists for OpenShift auth provider
+      uri:
+        url: "https://{{ api_endpoint }}/v1/groups"
+        method: POST
+        validate_certs: no
+        headers:
+            authorization: "{{ authorization }}"
+        body_format: json
+        body:
+          roleName: "{{ item.role_name }}"
+          props:
+            authProviderId: "{{ auth_provider_openshift_id }}"
+            key: "{{ item.key }}"
+            value: "{{ item.value }}"
+        status_code: [200,500]
+      with_items: "{{ custom_groups_with_openshift }}"
+
+    # 2 - Update to make sure the new roles are applied:
+    - name: Map role in OpenShift auth provider
+      uri:
+        url: "https://{{ api_endpoint }}/v1/groupsbatch"
+        method: POST
+        validate_certs: no
+        headers:
+            authorization: "{{ authorization }}"
+        body_format: json
+        body:
+            previous_groups:
+            - props:
+                authProviderId: "{{ auth_provider_openshift_id }}"
+                key: "{{ item.key }}"
+                value: "{{ item.value }}"
+            required_groups:
+            - roleName: "{{ item.role_name }}"
+              props:
+                authProviderId: "{{ auth_provider_openshift_id }}"
+                key: "{{ item.key }}"
+                value: "{{ item.value }}"
+        status_code: [200]
+      with_items: "{{ custom_groups_with_openshift }}"
+
+
+    # MISO users with Azure AD auth provider (oidc):
+    # 1 - Create if not exist:
+    - name: Create rolebinding if not exists for Azure AD auth provider
+      uri:
+        url: "https://{{ api_endpoint }}/v1/groups"
+        method: POST
+        validate_certs: no
+        headers:
+            authorization: "{{ authorization }}"
+        body_format: json
+        body:
+          roleName: "{{ item.role_name }}"
+          props:
+            authProviderId: "{{ auth_provider_oidc_id }}"
+            key: "{{ item.key }}"
+            value: "{{ item.value }}"
+        status_code: [200,500]
+      with_items: "{{ custom_groups_with_azuread }}"
+
+    # 2 - Update to make sure the new roles are applied:
+    - name: Map role in Azure AD auth provider
+      uri:
+        url: "https://{{ api_endpoint }}/v1/groupsbatch"
+        method: POST
+        validate_certs: no
+        headers:
+            authorization: "{{ authorization }}"
+        body_format: json
+        body:
+          previous_groups:
+          - props:
+              authProviderId: "{{ auth_provider_oidc_id }}"
+              key: "{{ item.key }}"
+              value: "{{ item.value }}"
+          required_groups:
+          - roleName: "{{ item.role_name }}"
+            props:
+              authProviderId: "{{ auth_provider_oidc_id }}"
+              key: "{{ item.key }}"
+              value: "{{ item.value }}"
+        status_code: [200]
+      with_items: "{{ custom_groups_with_azuread }}"
+
+  always:
+    # Revoke the API token when done:
+    - include_tasks: revoke_api_token.yaml
