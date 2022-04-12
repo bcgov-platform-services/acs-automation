@@ -20,11 +20,23 @@ ansible-playbook acs.yaml -e activity=acs_config \
     -e sso_client_id=$SSO_CLIENT_NAME -e sso_client_password=$SSO_CLIENT_PASSWORD -e sso_issuer=$SSO_ISSUER
 
 # - ACS project set team access
-ansible-playbook acs.yaml -e activity=acs_config \
+ansible-playbook acs.yaml -e activity=team_access \
     -e username=admin -e password=$ACS_ADMIN_PASSWORD -e api_endpoint=$ACS_API_ENDPOINT \
     -e project_set=$OC_PROJECT_SET -e user_list=$USERS
 
 # NOTE:if using a credential instead, replace API Token with username+password
+```
+
+### Building image
+
+In the devops folder, you'll find the OpenShift manifests for build. For now it's using OpenShift image registry, this should be updated to leverage Artifactory instead!
+
+```shell
+# first, create the imageStream and build the image:
+oc apply -f devops/is.yaml
+oc apply -f devops/bc.yaml
+
+# The secret and job deployment are managed by CCM, you can find the templates there!
 ```
 
 
