@@ -1,0 +1,32 @@
+---
+kind: BuildConfig
+apiVersion: build.openshift.io/v1
+metadata:
+  name: acs-automation
+  namespace: stackrox
+  labels:
+    build: acs-automation
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'acs-automation:v1'
+  resources:
+    limits:
+      cpu: '1'
+      memory: 1Gi
+    requests:
+      cpu: 10m
+      memory: 256Mi
+  successfulBuildsHistoryLimit: 1
+  failedBuildsHistoryLimit: 1
+  strategy:
+    type: Docker
+    dockerStrategy:
+      imageOptimizationPolicy: SkipLayers
+  source:
+    type: Git
+    git:
+      uri: 'https://github.com/bcgov-platform-services/acs-automation.git'
+      ref: main
+  runPolicy: Serial
