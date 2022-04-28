@@ -19,9 +19,9 @@ ansible-playbook acs.yaml -e activity=acs_config \
     -e username=admin -e password=$ACS_ADMIN_PASSWORD -e api_endpoint=$ACS_API_ENDPOINT \
     -e sso_client_id=$SSO_CLIENT_NAME -e sso_client_password=$SSO_CLIENT_PASSWORD -e sso_issuer=$SSO_ISSUER
 
-# - ACS project set team access
+# - ACS project set team access:
 ansible-playbook acs.yaml -e activity=team_access \
-    -e username=admin -e password=$ACS_ADMIN_PASSWORD -e api_endpoint=$ACS_API_ENDPOINT \
+    -e api_token=$ACS_API_TOKEN -e api_endpoint=$ACS_API_ENDPOINT \
     -e project_set=$OC_PROJECT_SET -e user_list=$USERS
 
 # NOTE:if using a credential instead, replace API Token with username+password
