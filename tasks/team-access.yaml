@@ -3,85 +3,93 @@
 
 - include_vars: vars/acs-team-access-config.yaml
 
-# Create Openshift Authenticator - created as part of CCM
+- include_tasks: create_api_token.yaml
 
-# Get OpenShift Authenticator to retrieve the ID
-- name: Get Auth Provider Id
-  uri:
-    url: "https://{{ api_endpoint }}/v1/authProviders?name=Openshift"
-    method: GET
-    validate_certs: no
-    headers:
-      authorization: "{{ authorization }}"
-    body_format: json
-    status_code: 200
-  register: authprovider_result
+- name: Start to create components, if failed, revoke the API token anyway
+  block:
+    # Create the access scopes
+    - name: Create Access Scopes
+      uri:
+        url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
+        method: POST
+        validate_certs: no
+        headers:
+          authorization: "{{ authorization }}"
+        body_format: json
+        body: "{{ item }}"
+        status_code: [200, 409]
+      with_items: "{{ access_scopes }}"
 
-# Create the permission sets - created as part of CCM
+    # Need to get the permission sets to get IDs for Roles
+    - name: Get Permission Sets
+      uri:
+        url: "https://{{ api_endpoint }}/v1/permissionsets"
+        method: GET
+        validate_certs: no
+        headers:
+          authorization: "{{ authorization }}"
+        body_format: json
+        status_code: 200
+      register: permission_set_result
 
-# Create the access scopes
-- name: Create Access Scopes
-  uri:
-    url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
-    method: POST
-    validate_certs: no
-    headers:
-      authorization: "{{ authorization }}"
-    body_format: json
-    body: "{{ item }}"
-    status_code: [200, 409]
-  with_items: "{{ access_scopes }}"
+    # Need to get the access scopes to get IDs for Roles
+    - name: Get Access Scopes
+      uri:
+        url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
+        method: GET
+        validate_certs: no
+        headers:
+          authorization: "{{ authorization }}"
+        body_format: json
+        status_code: 200
+      register: access_scope_result
 
-# Need to get the permission sets to get IDs for Roles
-- name: Get Permission Sets
-  uri:
-    url: "https://{{ api_endpoint }}/v1/permissionsets"
-    method: GET
-    validate_certs: no
-    headers:
-      authorization: "{{ authorization }}"
-    body_format: json
-    status_code: 200
-  register: permission_set_result
+    # Create all of the roles, create_role is depend on access_scope_result
+    - name: Create Roles
+      include_tasks: create_role.yaml
+      with_items: "{{ roles }}"
 
-# Need to get the access scopes to get IDs for Roles
-- name: Get Access Scopes
-  uri:
-    url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
-    method: GET
-    validate_certs: no
-    headers:
-      authorization: "{{ authorization }}"
-    body_format: json
-    status_code: 200
-  register: access_scope_result
+    # Retrieve the auth provider ID, auth has been created in CCM so we can just retrive here.
+    - name: Get Auth Provider Id
+      uri:
+        # auth_provider.name: OpenShift in vars
+        url: "https://{{ api_endpoint }}/v1/authProviders?name=OpenShift"
+        method: GET
+        validate_certs: no
+        headers:
+          authorization: "{{ authorization }}"
+        body_format: json
+        status_code: 200
+      register: authprovider_result
 
-# Create all of the roles
-- name: Create Roles
-  include_tasks: create_role.yaml
-  with_items: "{{ roles }}"
+    - name: Keep the auth provider ID for later use
+      set_fact:
+        "auth_provider_openshift_id": "{{ authprovider_result.json.authProviders[0].id }}"
 
-# Now we need to map
-- name: Map role in Provider
-  uri:
-    url: "https://{{ api_endpoint }}/v1/groupsbatch"
-    method: POST
-    validate_certs: no
-    headers:
-        authorization: "{{ authorization }}"
-    body_format: json
-    body:
-        previous_groups: []
-        # - roleName: "{{ item.name }}"
-        #   props:
-        #     authProviderId: "{{ authprovider_result.json.authProviders[0].id }}"
-        #     key: "{{ item.group_batch.key }}"
-        #     value: "{{ item.group_batch.value }}"
-        required_groups:
-        - roleName: "{{ item.role_name }}"
-          props:
-            authProviderId: "{{ authprovider_result.json.authProviders[0].id }}"
-            key: "{{ item.key }}"
-            value: "{{ item.value }}"
-    status_code: [200,500]
-  with_items: "{{ role_mappings }}"
+    # # Now we need to map
+    - name: Map role in Provider
+      uri:
+        url: "https://{{ api_endpoint }}/v1/groupsbatch"
+        method: POST
+        validate_certs: no
+        headers:
+          authorization: "{{ authorization }}"
+        body_format: json
+        body:
+          # previous_groups:
+          #   - roleName: "app-team-{{ project_set }}"
+          #     props:
+          #       authProviderId: "{{ auth_provider_openshift_id }}"
+          #       key: "{{ item.group_batch.key }}"
+          #       value: "{{ item.group_batch.value }}"
+          required_groups:
+            - roleName: "app-team-{{ project_set }}"
+              props:
+                authProviderId: "{{ auth_provider_openshift_id }}"
+                key: name
+                value: "{{ item }}"
+        status_code: [200, 500]
+      with_items: "{{ openshift_username.split(',') }}"
+  always:
+    # Revoke the API token when done:
+    - include_tasks: revoke_api_token.yaml

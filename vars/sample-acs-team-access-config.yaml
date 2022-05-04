@@ -11,13 +11,22 @@ access_scope:
     rules:
       includedClusters: []
       includedNamespaces: []
-      clusterLabelSelectors: []
+      clusterLabelSelectors: # registry will check duplication
+        - requirements:
+            - key: clusterName
+              op: IN
+              values:
+                - SILVER
+                - GOLD
+                - GOLDDR
+                - KLAB
+                - CLAB
       namespaceLabelSelectors:
-      - requirements:
-        - key: name
-          op: IN
-          values:
-          - project_set
+        - requirements:
+            - key: name
+              op: IN
+              values:
+                - " {{project_set}}"
 
 # role = Namespace Admin level Permission Set & Access Scope
 role:
