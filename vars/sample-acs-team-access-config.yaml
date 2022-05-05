@@ -26,7 +26,7 @@ access_scope:
             - key: name
               op: IN
               values:
-                - " {{project_set}}"
+                - "{{project_set}}"
 
 # role = Namespace Admin level Permission Set & Access Scope
 role:
