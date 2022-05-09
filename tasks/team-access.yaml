@@ -5,91 +5,116 @@
 
 - include_tasks: create_api_token.yaml
 
-- name: Start to create components, if failed, revoke the API token anyway
-  block:
-    # Create the access scopes
-    - name: Create Access Scopes
-      uri:
-        url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
-        method: POST
-        validate_certs: no
-        headers:
-          authorization: "{{ authorization }}"
-        body_format: json
-        body: "{{ item }}"
-        status_code: [200, 409]
-      with_items: "{{ access_scopes }}"
+# Create the access scopes
+- name: Create Access Scopes
+  uri:
+    url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
+    method: POST
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    body: "{{ item }}"
+    status_code: [200, 409]
+  with_items: "{{ access_scopes }}"
 
-    # Need to get the permission sets to get IDs for Roles
-    - name: Get Permission Sets
-      uri:
-        url: "https://{{ api_endpoint }}/v1/permissionsets"
-        method: GET
-        validate_certs: no
-        headers:
-          authorization: "{{ authorization }}"
-        body_format: json
-        status_code: 200
-      register: permission_set_result
+# Need to get the permission sets to get IDs for Roles
+- name: Get Permission Sets
+  uri:
+    url: "https://{{ api_endpoint }}/v1/permissionsets"
+    method: GET
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    status_code: 200
+  register: permission_set_result
 
-    # Need to get the access scopes to get IDs for Roles
-    - name: Get Access Scopes
-      uri:
-        url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
-        method: GET
-        validate_certs: no
-        headers:
-          authorization: "{{ authorization }}"
-        body_format: json
-        status_code: 200
-      register: access_scope_result
+# Need to get the access scopes to get IDs for Roles
+- name: Get Access Scopes
+  uri:
+    url: "https://{{ api_endpoint }}/v1/simpleaccessscopes"
+    method: GET
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    status_code: 200
+  register: access_scope_result
 
-    # Create all of the roles, create_role is depend on access_scope_result
-    - name: Create Roles
-      include_tasks: create_role.yaml
-      with_items: "{{ roles }}"
+# Create all of the roles, create_role is depend on access_scope_result
+- name: Create Roles
+  include_tasks: create_role.yaml
+  with_items: "{{ roles }}"
 
-    # Retrieve the auth provider ID, auth has been created in CCM so we can just retrive here.
-    - name: Get Auth Provider Id
-      uri:
-        # auth_provider.name: OpenShift in vars
-        url: "https://{{ api_endpoint }}/v1/authProviders?name=OpenShift"
-        method: GET
-        validate_certs: no
-        headers:
-          authorization: "{{ authorization }}"
-        body_format: json
-        status_code: 200
-      register: authprovider_result
+# Retrieve the auth provider ID, auth has been created in CCM so we can just retrive here.
+- name: Get Auth Provider Id
+  uri:
+    # auth_provider.name: OpenShift in vars
+    url: "https://{{ api_endpoint }}/v1/authProviders?name=OpenShift"
+    method: GET
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    status_code: 200
+  register: authprovider_result
 
-    - name: Keep the auth provider ID for later use
-      set_fact:
-        "auth_provider_openshift_id": "{{ authprovider_result.json.authProviders[0].id }}"
+- name: Keep the auth provider ID for later use
+  set_fact:
+    "auth_provider_openshift_id": "{{ authprovider_result.json.authProviders[0].id }}"
 
-    # # Now we need to map
-    - name: Map role in Provider
-      uri:
-        url: "https://{{ api_endpoint }}/v1/groupsbatch"
-        method: POST
-        validate_certs: no
-        headers:
-          authorization: "{{ authorization }}"
-        body_format: json
-        body:
-          # previous_groups:
-          #   - roleName: "app-team-{{ project_set }}"
-          #     props:
-          #       authProviderId: "{{ auth_provider_openshift_id }}"
-          #       key: "{{ item.group_batch.key }}"
-          #       value: "{{ item.group_batch.value }}"
-          required_groups:
-            - roleName: "app-team-{{ project_set }}"
-              props:
-                authProviderId: "{{ auth_provider_openshift_id }}"
-                key: name
-                value: "{{ item }}"
-        status_code: [200, 500]
-      with_items: "{{ openshift_username.split(',') }}"
-  always:
-    # Revoke the API token when done:
-    - include_tasks: revoke_api_token.yaml
+- name: Declear role name that will use cross the script
+  set_fact:
+    "role_name": "app-team-{{ project_set }}"
+
+- name: Create rolebinding if not exists for Azure AD auth provider
+  uri:
+    url: "https://{{ api_endpoint }}/v1/groups"
+    method: GET
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    body:
+      roleName: role_name
+    status_code: [200, 500]
+  register: current_group_response
+
+- name: Keep all existing group for later use
+  set_fact:
+    "current_groups": "{{ current_group_response.json.groups}}"
+
+- name: set current Openshift rules
+  set_fact:
+    "existing_openshift_rules": "{{current_groups | selectattr('props.authProviderId','equalto',auth_provider_openshift_id)}}"
+
+- name: Filter out updateing project rules because we will recreate all of them in following steps
+  set_fact:
+    "rules_without_updating_group": "{{existing_openshift_rules | rejectattr('roleName','equalto', role_name)}}"
+- name: New User to add
+  set_fact:
+    "new_user": "{{openshift_username.split(',')}}"
+
+- name: make new user rule object
+  set_fact:
+    "new_user_rules": "{{ new_user_rules | default([]) + [{'roleName': role_name, 'props':{ 'authProviderId': auth_provider_openshift_id,'key': 'name','value': item} }] }}"
+  with_items: "{{new_user}}"
+
+- name: New user group
+  set_fact:
+    new_user_group: "{{ rules_without_updating_group + new_user_rules }}"
+
+# Now we need to map, it won't create duplicated user when two rulues has same key, value and role
+- name: Map role in Provider
+  uri:
+    url: "https://{{ api_endpoint }}/v1/groupsbatch"
+    method: POST
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    body:
+      previous_groups: "{{existing_openshift_rules}}"
+      required_groups: "{{new_user_group}}"
+    status_code: 200
