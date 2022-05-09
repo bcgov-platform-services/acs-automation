@@ -64,7 +64,7 @@
   set_fact:
     "auth_provider_openshift_id": "{{ authprovider_result.json.authProviders[0].id }}"
 
-- name: Declear role name that will use cross the script
+- name: Declare role name that will use cross the script
   set_fact:
     "role_name": "app-team-{{ project_set }}"
 
@@ -83,25 +83,26 @@
 
 - name: Keep all existing group for later use
   set_fact:
-    "current_groups": "{{ current_group_response.json.groups}}"
+    "current_groups": "{{ current_group_response.json.groups }}"
 
-- name: set current Openshift rules
+- name: Set current Openshift rules
   set_fact:
-    "existing_openshift_rules": "{{current_groups | selectattr('props.authProviderId','equalto',auth_provider_openshift_id)}}"
+    "existing_openshift_rules": "{{ current_groups | selectattr('props.authProviderId','equalto',auth_provider_openshift_id) }}"
 
 - name: Filter out updateing project rules because we will recreate all of them in following steps
   set_fact:
-    "rules_without_updating_group": "{{existing_openshift_rules | rejectattr('roleName','equalto', role_name)}}"
+    "rules_without_updating_group": "{{ existing_openshift_rules | rejectattr('roleName','equalto', role_name) }}"
+
 - name: New User to add
   set_fact:
-    "new_user": "{{openshift_username.split(',')}}"
+    "new_user": "{{ openshift_username.split(',') }}"
 
-- name: make new user rule object
+- name: Building new user rule object
   set_fact:
-    "new_user_rules": "{{ new_user_rules | default([]) + [{'roleName': role_name, 'props':{ 'authProviderId': auth_provider_openshift_id,'key': 'name','value': item} }] }}"
+    "new_user_rules": "{{ new_user_rules | default([]) + [{'roleName': role_name, 'props':{ 'authProviderId': auth_provider_openshift_id,'key': 'name','value': item}}] }}"
   with_items: "{{new_user}}"
 
-- name: New user group
+- name: New user group = group without old project's rules + new project's rules
   set_fact:
     new_user_group: "{{ rules_without_updating_group + new_user_rules }}"
 
@@ -115,6 +116,6 @@
       authorization: "{{ authorization }}"
     body_format: json
     body:
-      previous_groups: "{{existing_openshift_rules}}"
-      required_groups: "{{new_user_group}}"
+      previous_groups: "{{ existing_openshift_rules }}"
+      required_groups: "{{ new_user_group }}"
     status_code: 200
