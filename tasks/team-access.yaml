@@ -3,8 +3,6 @@
 
 - include_vars: vars/acs-team-access-config.yaml
 
-- include_tasks: create_api_token.yaml
-
 # Create the access scopes
 - name: Create Access Scopes
   uri:
@@ -45,7 +43,7 @@
 # Create all of the roles, create_role is depend on access_scope_result
 - name: Create Roles
   include_tasks: create_role.yaml
-  with_items: "{{ roles }}"
+  with_items: "{{ role }}"
 
 # Retrieve the auth provider ID, auth has been created in CCM so we can just retrive here.
 - name: Get Auth Provider Id
@@ -62,13 +60,13 @@
 
 - name: Keep the auth provider ID for later use
   set_fact:
-    "auth_provider_openshift_id": "{{ authprovider_result.json.authProviders[0].id }}"
+    auth_provider_openshift_id: "{{ authprovider_result.json.authProviders[0].id }}"
 
 - name: Declare role name that will use cross the script
   set_fact:
-    "role_name": "app-team-{{ project_set }}"
+    role_name: "app-team-{{ project_set }}"
 
-- name: Create rolebinding if not exists for Azure AD auth provider
+- name: Get all existing groups
   uri:
     url: "https://{{ api_endpoint }}/v1/groups"
     method: GET
@@ -83,30 +81,32 @@
 
 - name: Keep all existing group for later use
   set_fact:
-    "current_groups": "{{ current_group_response.json.groups }}"
+    current_groups: "{{ current_group_response.json.groups }}"
 
-- name: Set current Openshift rules
+# In the feature, filter out any posible custom rule in this step
+- name: Only get openshift project teams groups
   set_fact:
-    "existing_openshift_rules": "{{ current_groups | selectattr('props.authProviderId','equalto',auth_provider_openshift_id) }}"
+    previous_project_groups: "{{ current_groups | selectattr('props.authProviderId','equalto',auth_provider_openshift_id) | rejectattr('roleName','equalto', 'Admin')  }}"
 
 - name: Filter out updateing project rules because we will recreate all of them in following steps
   set_fact:
-    "rules_without_updating_group": "{{ existing_openshift_rules | rejectattr('roleName','equalto', role_name) }}"
+    project_group_without_updating_group: "{{ current_groups | selectattr('props.authProviderId','equalto',auth_provider_openshift_id) | rejectattr('roleName','equalto', role_name) | rejectattr('roleName','equalto', 'Admin') }}"
 
 - name: New User to add
   set_fact:
-    "new_user": "{{ openshift_username.split(',') }}"
+    new_user: "{{ openshift_username.split(',') }}"
 
 - name: Building new user rule object
   set_fact:
-    "new_user_rules": "{{ new_user_rules | default([]) + [{'roleName': role_name, 'props':{ 'authProviderId': auth_provider_openshift_id,'key': 'name','value': item}}] }}"
+    new_user_rules: "{{ new_user_rules | default([]) + [{'roleName': role_name, 'props':{ 'authProviderId': auth_provider_openshift_id,'key': 'name','value': item}}] }}"
   with_items: "{{new_user}}"
 
 - name: New user group = group without old project's rules + new project's rules
   set_fact:
-    new_user_group: "{{ rules_without_updating_group + new_user_rules }}"
+    new_project_groups: "{{ project_group_without_updating_group + new_user_rules }}"
 
 # Now we need to map, it won't create duplicated user when two rulues has same key, value and role
+# One username can only bind one rule, todo, need one user have multiple role.
 - name: Map role in Provider
   uri:
     url: "https://{{ api_endpoint }}/v1/groupsbatch"
@@ -116,6 +116,6 @@
       authorization: "{{ authorization }}"
     body_format: json
     body:
-      previous_groups: "{{ existing_openshift_rules }}"
-      required_groups: "{{ new_user_group }}"
+      previous_groups: "{{ previous_project_groups }}"
+      required_groups: "{{ new_project_groups }}"
     status_code: 200

@@ -29,7 +29,7 @@ access_scopes:
                 - "{{ project_set }}"
 
 # role = Namespace Admin level Permission Set & Access Scope
-roles:
+role:
   - name: "app-team-{{ project_set }}"
     description: Administrators of product catalog namespaces
     permission_set: Namespace Admin
