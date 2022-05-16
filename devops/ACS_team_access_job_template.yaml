@@ -1,0 +1,72 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: acs-automation
+  labels:
+    app: acs-automation
+  namespace: platform-provisioner-tools
+objects:
+  - kind: Job
+    apiVersion: batch/v1
+    metadata:
+      name: acs-automation
+      labels:
+        app: acs-automation
+    spec:
+      backoffLimit: 2
+      completions: 1
+      parallelism: 1
+      template:
+        metadata:
+          labels:
+            app: acs-automation
+        spec:
+          containers:
+            - image: "image-registry.openshift-image-registry.svc:5000/platform-provisioner-tools/acs-automation:v1"
+              imagePullPolicy: Always
+              name: acs-automation
+              workingDir: /ansible
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              command: ["ansible-playbook"]
+              args:
+                [
+                  "acs.yaml",
+                  "-e activity=team_access",
+                  "-e api_token=$(ACS_API_TOKEN)",
+                  "-e api_endpoint=$(ACS_API_ENDPOINT)",
+                  "-e project_set=${PROJECT_LICENSE_PLATE}",
+                  "-e openshift_username=${PROJECT_CONTACTS_USERSNAME}",
+                ]
+              env:
+                - name: ACS_API_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: acs-automation
+                      key: acs_token
+                - name: ACS_API_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: acs-automation
+                      key: api_endpoint
+                - name: ACS_API_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: acs-automation
+                      key: api_endpoint
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          terminationGracePeriodSeconds: 30
+parameters:
+  - description: |
+      ACS Team access license plate
+    displayName: License plate
+    name: PROJECT_LICENSE_PLATE
+    required: true
+  - description: |
+      project set contacts
+    displayName: project contacts github username in string seperated by comma
+    name: PROJECT_CONTACTS_USERSNAME
+    required: true
