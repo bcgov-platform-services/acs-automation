@@ -12,6 +12,7 @@ objects:
       name: acs-automation
       labels:
         app: acs-automation
+      namespace: platform-provisioner-tools
     spec:
       backoffLimit: 2
       completions: 1
