@@ -2,7 +2,7 @@
 - hosts: localhost
   connection: local
   gather_facts: no
-  vars_files: 
+  vars_files:
     - vars.yaml
   tasks:
     # setup auth:
@@ -17,7 +17,7 @@
       when: username is defined and password is defined
 
     - include_tasks: tasks/testing.yaml
-      when: activity == 'testing'
+      when: activity == 'testing' or 'team_access'
 
     - include_tasks: tasks/acs-config.yaml
       when: activity == "acs_config"

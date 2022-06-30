@@ -5,19 +5,28 @@
 # "Namespace Admin" Permission Set is created in ACS config
 
 # Namespace Admin Access Scope
-access_scope:
+access_scopes:
   - name: "project-set-{{ project_set }}"
     description: Application Team Access
     rules:
       includedClusters: []
       includedNamespaces: []
-      clusterLabelSelectors: []
+      clusterLabelSelectors: # registry will check duplication
+        - requirements:
+            - key: clusterName
+              op: IN
+              values:
+                - SILVER
+                - GOLD
+                - GOLDDR
+                - KLAB
+                - CLAB
       namespaceLabelSelectors:
-      - requirements:
-        - key: name
-          op: IN
-          values:
-          - project_set
+        - requirements:
+            - key: name
+              op: IN
+              values:
+                - "{{ project_set }}"
 
 # role = Namespace Admin level Permission Set & Access Scope
 role:
@@ -27,8 +36,8 @@ role:
     access_scope: "project-set-{{ project_set }}"
     global_access: NO_ACCESS
 
-# Associate roles with users, aka groups
-# NOTE: for OpenShift authProvider, it's name
+# # Associate roles with users, aka groups
+# # NOTE: for OpenShift authProvider, it's name
 role_mappings:
   - key: name
     value: "{{ openshift_username }}"

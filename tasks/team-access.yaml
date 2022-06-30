@@ -3,22 +3,6 @@
 
 - include_vars: vars/acs-team-access-config.yaml
 
-# Create Openshift Authenticator - created as part of CCM
-
-# Get OpenShift Authenticator to retrieve the ID
-- name: Get Auth Provider Id
-  uri:
-    url: "https://{{ api_endpoint }}/v1/authProviders?name=Openshift"
-    method: GET
-    validate_certs: no
-    headers:
-      authorization: "{{ authorization }}"
-    body_format: json
-    status_code: 200
-  register: authprovider_result
-
-# Create the permission sets - created as part of CCM
-
 # Create the access scopes
 - name: Create Access Scopes
   uri:
@@ -56,32 +40,82 @@
     status_code: 200
   register: access_scope_result
 
-# Create all of the roles
+# Create all of the roles, create_role is depend on access_scope_result
 - name: Create Roles
   include_tasks: create_role.yaml
-  with_items: "{{ roles }}"
+  with_items: "{{ role }}"
 
-# Now we need to map
+# Retrieve the auth provider ID, auth has been created in CCM so we can just retrive here.
+- name: Get Auth Provider Id
+  uri:
+    # auth_provider.name: OpenShift in vars
+    url: "https://{{ api_endpoint }}/v1/authProviders?name=OpenShift"
+    method: GET
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    status_code: 200
+  register: authprovider_result
+
+- name: Keep the auth provider ID for later use
+  set_fact:
+    auth_provider_openshift_id: "{{ authprovider_result.json.authProviders[0].id }}"
+
+- name: Declare role name that will use cross the script
+  set_fact:
+    role_name: "app-team-{{ project_set }}"
+
+- name: Get all existing groups
+  uri:
+    url: "https://{{ api_endpoint }}/v1/groups"
+    method: GET
+    validate_certs: no
+    headers:
+      authorization: "{{ authorization }}"
+    body_format: json
+    body:
+      roleName: role_name
+    status_code: [200, 500]
+  register: current_group_response
+
+- name: Keep all existing group for later use
+  set_fact:
+    current_groups: "{{ current_group_response.json.groups }}"
+
+# In the feature, filter out any posible custom rule in this step
+- name: Only get openshift project teams groups
+  set_fact:
+    previous_project_groups: "{{ current_groups | selectattr('props.authProviderId','equalto',auth_provider_openshift_id) | rejectattr('roleName','equalto', 'Admin')  }}"
+
+- name: Filter out updateing project rules because we will recreate all of them in following steps
+  set_fact:
+    project_group_without_updating_group: "{{ current_groups | selectattr('props.authProviderId','equalto',auth_provider_openshift_id) | rejectattr('roleName','equalto', role_name) | rejectattr('roleName','equalto', 'Admin') }}"
+
+- name: New User to add
+  set_fact:
+    new_user: "{{ openshift_username.split(',') }}"
+
+- name: Building new user rule object
+  set_fact:
+    new_user_rules: "{{ new_user_rules | default([]) + [{'roleName': role_name, 'props':{ 'authProviderId': auth_provider_openshift_id,'key': 'name','value': item}}] }}"
+  with_items: "{{new_user}}"
+
+- name: New user group = group without old project's rules + new project's rules
+  set_fact:
+    new_project_groups: "{{ project_group_without_updating_group + new_user_rules }}"
+
+# Now we need to map, it won't create duplicated user when two rulues has same key, value and role
+# One username can only bind one rule, todo, need one user have multiple role.
 - name: Map role in Provider
   uri:
     url: "https://{{ api_endpoint }}/v1/groupsbatch"
     method: POST
     validate_certs: no
     headers:
-        authorization: "{{ authorization }}"
+      authorization: "{{ authorization }}"
     body_format: json
     body:
-        previous_groups: []
-        # - roleName: "{{ item.name }}"
-        #   props:
-        #     authProviderId: "{{ authprovider_result.json.authProviders[0].id }}"
-        #     key: "{{ item.group_batch.key }}"
-        #     value: "{{ item.group_batch.value }}"
-        required_groups:
-        - roleName: "{{ item.role_name }}"
-          props:
-            authProviderId: "{{ authprovider_result.json.authProviders[0].id }}"
-            key: "{{ item.key }}"
-            value: "{{ item.value }}"
-    status_code: [200,500]
-  with_items: "{{ role_mappings }}"
+      previous_groups: "{{ previous_project_groups }}"
+      required_groups: "{{ new_project_groups }}"
+    status_code: 200
